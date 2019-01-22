@@ -127,6 +127,161 @@ endef
 
 
 
+# Core targets.
+
+ifdef IS_APP
+apps::
+else
+apps:: $(ALL_APPS_DIRS)
+ifeq ($(IS_APP)$(IS_DEP),)
+    $(verbose) rm -f $(ERLANG_MK_TMP)/apps.log
+endif
+    $(verbose) mkdir -p $(ERLANG_MK_TMP)
+# Create ebin directory for all apps to make sure Erlang recognizes them
+# as proper OTP applications when using -include_lib. This is a temporary
+# fix, a proper fix would be to compile apps/* in the right order.
+    $(verbose) for dep in $(ALL_APPS_DIRS) ; do \
+        mkdir -p $$dep/ebin || exit $$?; \
+    done
+    $(verbose) for dep in $(ALL_APPS_DIRS) ; do \
+        if grep -qs ^$$dep$$ $(ERLANG_MK_TMP)/apps.log; then \
+            :; \
+        else 
+            echo $$dep >> $(ERLANG_MK_TMP)/apps.log; \
+            $(MAKE) -C $$dep IS_APP=1 || exit $$?; \
+        fi \
+    done
+endif
+
+ifneq ($(SKIP_DEPS),)
+deps::
+else
+deps:: $(ALL_DEPS_DIRS) apps
+ifeq ($(IS_APP)$(IS_DEP),)
+    $(verbose) rm -f $(ERLANG_MK_TMP)/deps.log
+endif
+    $(verbose) mkdir -p $(ERLANG_MK_TMP)
+    $(verbose) for dep in $(ALL_DEPS_DIRS) ; do \
+        if grep -qs ^$$dep$$ $(ERLANG_MK_TMP)/deps.log; then \
+            :; \
+        else \
+            echo $$dep >> $(ERLANG_MK_TMP)/deps.log; \
+            if [ -f $$dep/GNUmakefile ] || [ -f $$dep/makefile ] || [ -f $$dep/Makefile ]; then \
+                $(MAKE) -C $$dep IS_DEP=1 || exit $$?; \
+            else \
+                echo "Error: No Makefile to build dependency $$dep."; \
+                exit 2; \
+            fi \
+        fi \
+    done
+endif
+
+# Deps related targets.
+
+# @todo rename GNUmakefile and makefile into Makefile first, if they exist
+# While Makefile file could be GNUmakefile or makefile,
+# in practice only Makefile is needed so far.
+define dep_autopatch
+
+endef
+
+
+
+define dep_fetch_git
+    git clone -q -n -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1)); \
+    cd $(DEPS_DIR)/$(call dep_name,$(1)) && git checkout -q $(call dep_commit,$(1));
+endef
+
+define dep_fetch_git-submodule
+    git submodule update --init -- $(DEPS_DIR)/$1;
+endef
+
+
+
+define dep_fetch_fail
+    echo "Error: Unknown or invalid dependency: $(1)." >&2; \
+    exit 78;
+endef
+
+# Kept for compatibility purposes with older Erlang.mk configuration.
+define dep_fetch_legacy
+    $(warning WARNING: '$(1)' dependency configuration uses deprecated format.) \
+    git clone -q -n -- $(word 1,$(dep_$(1))) $(DEPS_DIR)/$(1); \
+    cd $(DEPS_DIR)/$(1) && git checkout -q $(if $(word 2,$(dep_$(1))),$(word 2,$(dep_$(1))), master);
+endef
+
+define dep_fetch
+    $(if $(dep_$(1)), \
+        $(if $(dep_fetch_$(word 1,$(dep_$(1)))), \
+            $(word 1,$(dep_$(1))), \
+            $(if $(IS_DEP),legacy,fail)), \
+        $(if $(filter $(1),$(PACKAGES)), \
+            $(pkg_$(1)_fetch), \
+            fail))
+endef
+
+GIT_VSN := $(shell git --version | grep -oE "[0-9]{1,2}\.[0-9]{1,2}")
+GIT_VSN_17_COMP := $(shell echo -e "$(GIT_VSN)\n1.7" | sort -V | tail -1)
+ifeq ($(GIT_VSN_17_COMP),1.7)
+    MAYBE_SHALLOW :=
+else
+    MAYBE_SHALLOW := -c advice.detachedHead=false --depth 1
+endif
+
+# Override default git full-clone with depth=1 shallow-clone
+ifeq ($(GIT_VSN_17_COMP),1.7)
+define dep_fetch_git-gmqx
+    git clone -q -n -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1)); \
+        cd $(DEPS_DIR)/$(call dep_name,$(1)) && git checkout -q $(call dep_commit,$(1))
+endef
+else
+define dep_fetch_git-gmqx
+    git clone -q -c advice.detachedHead=false --depth 1 -b $(call dep_commit,$(1)) -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1))
+endef
+endif
+
+core_http_get-gmqx = curl -Lf$(if $(filter-out 0,$(V)),,s)o $(call core_native_path,$1) $2
+
+define dep_fetch_hex-gmqx
+    mkdir -p $(ERLANG_MK_TMP)/hex $(DEPS_DIR)/$1; \
+    $(call core_http_get-gmqx,$(ERLANG_MK_TMP)/hex/$1.tar,\
+        https://repo.hex.pm/tarballs/$1-$(strip $(word 2,$(dep_$1))).tar); \
+    tar -xOf $(ERLANG_MK_TMP)/hex/$1.tar contents.tar.gz | tar -C $(DEPS_DIR)/$1 -xzf -;
+endef
+
+define dep_target
+
+endef
+
+$(foreach dep,$(BUILD_DEPS) $(DEPS),$(eval $(call dep_target,$(dep))))
+
+ifndef IS_APP
+clean:: clean-apps
+
+clean-apps:
+    $(verbose) for dep in $(ALL_APPS_DIRS) ; do \
+        $(MAKE) -C $$dep clean IS_APP=1 || exit $$?; \
+    done
+
+distclean:: distclean-apps
+
+distclean-apps:
+    $(verbose) for dep in $(ALL_APPS_DIRS) ; do \
+        $(MAKE) -C $$dep distclean IS_APP=1 || exit $$?; \
+    done
+endif
+
+ifndef SKIP_DEPS
+distclean:: distclean-deps
+
+distclean-deps:
+    $(gen_verbose) rm -rf $(DEPS_DIR)
+endif
+
+# External plugins.
+
+
+
 # Copyright (c) 2015, Erlang Solutions Ltd.
 # This file is part of erlang.mk and subject to the terms of the ISC License.
 
