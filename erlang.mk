@@ -1,4 +1,16 @@
-
+# Copyright (c) 2013-2015, Loïc Hoguin <essen@ninenines.eu>
+#
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 .PHONY: all app apps deps search rel docs install-docs check tests clean distclean help erlang-mk
 
@@ -125,7 +137,129 @@ define comma_list
 $(subst $(space),$(comma),$(strip $(1)))
 endef
 
+# Adding erlang.mk to make Erlang scripts who call init:get_plain_arguments() happy.
+define erlang
+$(ERL) $(2) -pz $(ERLANG_MK_TMP)/rebar/ebin -eval "$(subst $(newline),,$(subst ",\",$(1)))" -- erlang.mk
+endef
 
+ifeq ($(PLATFORM),msys2)
+core_native_path = $(subst \,\\\\,$(shell cygpath -w $1))
+else
+core_native_path = $1
+endif
+
+ifeq ($(strip $(shell which wget 2>/dev/null | wc -l)), 1)
+define core_http_get
+    wget --quiet --no-check-certificate -O $(1) $(2) || rm $(1)
+endef
+else
+define core_http_get
+    curl -kLf$(if $(filter-out 0,$(V)),,s)o $(call core_native_path,$1) $2
+endef
+endif
+
+core_eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
+
+core_find = $(if $(wildcard $1),$(shell find $(1:%/=%) -type f -name $(subst *,\*,$2)))
+
+core_lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(subst G,g,$(subst H,h,$(subst I,i,$(subst J,j,$(subst K,k,$(subst L,l,$(subst M,m,$(subst N,n,$(subst O,o,$(subst P,p,$(subst Q,q,$(subst R,r,$(subst S,s,$(subst T,t,$(subst U,u,$(subst V,v,$(subst W,w,$(subst X,x,$(subst Y,y,$(subst Z,z,$(1)))))))))))))))))))))))))))
+
+core_ls = $(filter-out $(1),$(shell echo $(1)))
+
+# @todo Use a solution that does not require using perl.
+core_relpath = $(shell perl -e 'use File::Spec; print File::Spec->abs2rel(@ARGV) . "\n"' $1 $2)
+
+# Automated update.
+
+ERLANG_MK_REPO ?= https://github.com/ninenines/erlang.mk
+ERLANG_MK_COMMIT ?=
+ERLANG_MK_BUILD_CONFIG ?= build.config
+ERLANG_MK_BUILD_DIR ?= .erlang.mk.build
+
+erlang.mk:
+    git clone $(ERLANG_MK_REPO) $(ERLANG_MK_BUILD_DIR)
+ifdef ERLANG_MK_COMMIT
+    cd $(ERLANG_MK_BUILD_DIR) && git checkout $(ERLANG_MK_COMMIT)
+endif
+    if [ -f $(ERLANG_MK_BUILD_CONFIG) ]; then cp $(ERLANG_MK_BUILD_CONFIG) $(ERLANG_MK_BUILD_DIR)/build.config; fi
+    $(MAKE) -C $(ERLANG_MK_BUILD_DIR)
+    cp $(ERLANG_MK_BUILD_DIR)/erlang.mk ./erlang.mk
+    rm -rf $(ERLANG_MK_BUILD_DIR)
+
+# Copyright (c) 2015, Loïc Hoguin <essen@ninenines.eu>
+# This file is part of erlang.mk and subject to the terms of the ISC License.
+
+.PHONY: search
+
+define pkg_print
+    $(verbose) printf "%s\n" \
+        $(if $(call core_eq,$(1),$(pkg_$(1)_name)),,"Pkg name:    $(1)") \
+        "App name:    $(pkg_$(1)_name)" \
+        "Description: $(pkg_$(1)_description)" \
+        "Home page:   $(pkg_$(1)_homepage)" \
+        "Fetch with:  $(pkg_$(1)_fetch)" \
+        "Repository:  $(pkg_$(1)_repo)" \
+        "Commit:      $(pkg_$(1)_commit)" \
+        ""
+
+endef
+
+search:
+ifdef q
+    $(foreach p,$(PACKAGES), \
+        $(if $(findstring $(call core_lc,$(q)),$(call core_lc,$(pkg_$(p)_name) $(pkg_$(p)_description))), \
+            $(call pkg_print,$(p))))
+else
+    $(foreach p,$(PACKAGES),$(call pkg_print,$(p)))
+endif
+
+# Copyright (c) 2013-2015, Loïc Hoguin <essen@ninenines.eu>
+# This file is part of erlang.mk and subject to the terms of the ISC License.
+
+.PHONY: distclean-deps
+
+# Configuration.
+
+ifdef OTP_DEPS
+$(warning The variable OTP_DEPS is deprecated in favor of LOCAL_DEPS.)
+endif
+
+IGNORE_DEPS ?=
+export IGNORE_DEPS
+
+APPS_DIR ?= $(CURDIR)/apps
+export APPS_DIR
+
+DEPS_DIR ?= $(CURDIR)/deps
+export DEPS_DIR
+
+REBAR_DEPS_DIR = $(DEPS_DIR)
+export REBAR_DEPS_DIR
+
+dep_name = $(if $(dep_$(1)),$(1),$(if $(pkg_$(1)_name),$(pkg_$(1)_name),$(1)))
+dep_repo = $(patsubst git://github.com/%,https://github.com/%, \
+    $(if $(dep_$(1)),$(word 2,$(dep_$(1))),$(pkg_$(1)_repo)))
+dep_commit = $(if $(dep_$(1)_commit),$(dep_$(1)_commit),$(if $(dep_$(1)),$(word 3,$(dep_$(1))),$(pkg_$(1)_commit)))
+
+ALL_APPS_DIRS = $(if $(wildcard $(APPS_DIR)/),$(filter-out $(APPS_DIR),$(shell find $(APPS_DIR) -maxdepth 1 -type d)))
+ALL_DEPS_DIRS = $(addprefix $(DEPS_DIR)/,$(foreach dep,$(filter-out $(IGNORE_DEPS),$(BUILD_DEPS) $(DEPS)),$(call dep_name,$(dep))))
+
+ifeq ($(filter $(APPS_DIR) $(DEPS_DIR),$(subst :, ,$(ERL_LIBS))),)
+ifeq ($(ERL_LIBS),)
+    ERL_LIBS = $(APPS_DIR):$(DEPS_DIR)
+else
+    ERL_LIBS := $(ERL_LIBS):$(APPS_DIR):$(DEPS_DIR)
+endif
+endif
+export ERL_LIBS
+
+export NO_AUTOPATCH
+
+# Verbosity.
+
+dep_verbose_0 = @echo " DEP   " $(1);
+dep_verbose_2 = set -x;
+dep_verbose = $(dep_verbose_$(V))
 
 # Core targets.
 
