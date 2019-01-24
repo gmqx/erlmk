@@ -83,7 +83,7 @@ all:: deps app rel
 
 # Noop to avoid a Make warning when there's nothing to do.
 rel::
-    $(verbose) :
+	$(verbose) :
 
 check:: tests
 
@@ -91,35 +91,35 @@ clean:: clean-crashdump
 
 clean-crashdump:
 ifneq ($(wildcard erl_crash.dump),)
-    $(gen_verbose) rm -f erl_crash.dump
+	$(gen_verbose) rm -f erl_crash.dump
 endif
 
 distclean: clean distclean-tmp
 
 distclean-tmp:
-    $(gen_verbose) rm -rf $(ERLANG_MK_TMP)
+	$(gen_verbose) rm -rf $(ERLANG_MK_TMP)
 
 help::
-    $(verbose) printf "%s\n" \
-        "erlang.mk (version $(ERLANG_MK_VERSION)) is distributed under the terms of the ISC License." \
-        "Copyright (c) 2013-2015 Loïc Hoguin <essen@ninenines.eu>" \
-        "" \
-        "Usage: [V=1] $(MAKE) [target]..." \
-        "" \
-        "Core targets:" \
-        "  all           Run deps, app and rel targets in that order" \
-        "  app           Compile the project" \
-        "  deps          Fetch dependencies (if needed) and compile them" \
-        "  search q=...  Search for a package in the built-in index" \
-        "  rel           Build a release for this project, if applicable" \
-        "  docs          Build the documentation for this project" \
-        "  install-docs  Install the man pages for this project" \
-        "  check         Compile and run all tests and analysis for this project" \
-        "  tests         Run the tests for this project" \
-        "  clean         Delete temporary and output files from most targets" \
-        "  distclean     Delete all temporary and output files" \
-        "  help          Display this help and exit" \
-        "  erlang-mk     Update erlang.mk to the latest version"
+	$(verbose) printf "%s\n" \
+		"erlang.mk (version $(ERLANG_MK_VERSION)) is distributed under the terms of the ISC License." \
+		"Copyright (c) 2013-2015 Loïc Hoguin <essen@ninenines.eu>" \
+		"" \
+		"Usage: [V=1] $(MAKE) [target]..." \
+		"" \
+		"Core targets:" \
+		"  all           Run deps, app and rel targets in that order" \
+		"  app           Compile the project" \
+		"  deps          Fetch dependencies (if needed) and compile them" \
+		"  search q=...  Search for a package in the built-in index" \
+		"  rel           Build a release for this project, if applicable" \
+		"  docs          Build the documentation for this project" \
+		"  install-docs  Install the man pages for this project" \
+		"  check         Compile and run all tests and analysis for this project" \
+		"  tests         Run the tests for this project" \
+		"  clean         Delete temporary and output files from most targets" \
+		"  distclean     Delete all temporary and output files" \
+		"  help          Display this help and exit" \
+		"  erlang-mk     Update erlang.mk to the latest version"
 
 # Core functions.
 
@@ -150,11 +150,11 @@ endif
 
 ifeq ($(strip $(shell which wget 2>/dev/null | wc -l)), 1)
 define core_http_get
-    wget --quiet --no-check-certificate -O $(1) $(2) || rm $(1)
+	wget --quiet --no-check-certificate -O $(1) $(2) || rm $(1)
 endef
 else
 define core_http_get
-    curl -kLf$(if $(filter-out 0,$(V)),,s)o $(call core_native_path,$1) $2
+	curl -kLf$(if $(filter-out 0,$(V)),,s)o $(call core_native_path,$1) $2
 endef
 endif
 
@@ -177,14 +177,14 @@ ERLANG_MK_BUILD_CONFIG ?= build.config
 ERLANG_MK_BUILD_DIR ?= .erlang.mk.build
 
 erlang.mk:
-    git clone $(ERLANG_MK_REPO) $(ERLANG_MK_BUILD_DIR)
+	git clone $(ERLANG_MK_REPO) $(ERLANG_MK_BUILD_DIR)
 ifdef ERLANG_MK_COMMIT
-    cd $(ERLANG_MK_BUILD_DIR) && git checkout $(ERLANG_MK_COMMIT)
+	cd $(ERLANG_MK_BUILD_DIR) && git checkout $(ERLANG_MK_COMMIT)
 endif
-    if [ -f $(ERLANG_MK_BUILD_CONFIG) ]; then cp $(ERLANG_MK_BUILD_CONFIG) $(ERLANG_MK_BUILD_DIR)/build.config; fi
-    $(MAKE) -C $(ERLANG_MK_BUILD_DIR)
-    cp $(ERLANG_MK_BUILD_DIR)/erlang.mk ./erlang.mk
-    rm -rf $(ERLANG_MK_BUILD_DIR)
+	if [ -f $(ERLANG_MK_BUILD_CONFIG) ]; then cp $(ERLANG_MK_BUILD_CONFIG) $(ERLANG_MK_BUILD_DIR)/build.config; fi
+	$(MAKE) -C $(ERLANG_MK_BUILD_DIR)
+	cp $(ERLANG_MK_BUILD_DIR)/erlang.mk ./erlang.mk
+	rm -rf $(ERLANG_MK_BUILD_DIR)
 
 # Copyright (c) 2015, Loïc Hoguin <essen@ninenines.eu>
 # This file is part of erlang.mk and subject to the terms of the ISC License.
@@ -192,25 +192,25 @@ endif
 .PHONY: search
 
 define pkg_print
-    $(verbose) printf "%s\n" \
-        $(if $(call core_eq,$(1),$(pkg_$(1)_name)),,"Pkg name:    $(1)") \
-        "App name:    $(pkg_$(1)_name)" \
-        "Description: $(pkg_$(1)_description)" \
-        "Home page:   $(pkg_$(1)_homepage)" \
-        "Fetch with:  $(pkg_$(1)_fetch)" \
-        "Repository:  $(pkg_$(1)_repo)" \
-        "Commit:      $(pkg_$(1)_commit)" \
-        ""
+	$(verbose) printf "%s\n" \
+		$(if $(call core_eq,$(1),$(pkg_$(1)_name)),,"Pkg name:    $(1)") \
+		"App name:    $(pkg_$(1)_name)" \
+		"Description: $(pkg_$(1)_description)" \
+		"Home page:   $(pkg_$(1)_homepage)" \
+		"Fetch with:  $(pkg_$(1)_fetch)" \
+		"Repository:  $(pkg_$(1)_repo)" \
+		"Commit:      $(pkg_$(1)_commit)" \
+		""
 
 endef
 
 search:
 ifdef q
-    $(foreach p,$(PACKAGES), \
-        $(if $(findstring $(call core_lc,$(q)),$(call core_lc,$(pkg_$(p)_name) $(pkg_$(p)_description))), \
-            $(call pkg_print,$(p))))
+	$(foreach p,$(PACKAGES), \
+		$(if $(findstring $(call core_lc,$(q)),$(call core_lc,$(pkg_$(p)_name) $(pkg_$(p)_description))), \
+			$(call pkg_print,$(p))))
 else
-    $(foreach p,$(PACKAGES),$(call pkg_print,$(p)))
+	$(foreach p,$(PACKAGES),$(call pkg_print,$(p)))
 endif
 
 # Copyright (c) 2013-2015, Loïc Hoguin <essen@ninenines.eu>
@@ -238,7 +238,7 @@ export REBAR_DEPS_DIR
 
 dep_name = $(if $(dep_$(1)),$(1),$(if $(pkg_$(1)_name),$(pkg_$(1)_name),$(1)))
 dep_repo = $(patsubst git://github.com/%,https://github.com/%, \
-    $(if $(dep_$(1)),$(word 2,$(dep_$(1))),$(pkg_$(1)_repo)))
+	$(if $(dep_$(1)),$(word 2,$(dep_$(1))),$(pkg_$(1)_repo)))
 dep_commit = $(if $(dep_$(1)_commit),$(dep_$(1)_commit),$(if $(dep_$(1)),$(word 3,$(dep_$(1))),$(pkg_$(1)_commit)))
 
 ALL_APPS_DIRS = $(if $(wildcard $(APPS_DIR)/),$(filter-out $(APPS_DIR),$(shell find $(APPS_DIR) -maxdepth 1 -type d)))
@@ -246,9 +246,9 @@ ALL_DEPS_DIRS = $(addprefix $(DEPS_DIR)/,$(foreach dep,$(filter-out $(IGNORE_DEP
 
 ifeq ($(filter $(APPS_DIR) $(DEPS_DIR),$(subst :, ,$(ERL_LIBS))),)
 ifeq ($(ERL_LIBS),)
-    ERL_LIBS = $(APPS_DIR):$(DEPS_DIR)
+	ERL_LIBS = $(APPS_DIR):$(DEPS_DIR)
 else
-    ERL_LIBS := $(ERL_LIBS):$(APPS_DIR):$(DEPS_DIR)
+	ERL_LIBS := $(ERL_LIBS):$(APPS_DIR):$(DEPS_DIR)
 endif
 endif
 export ERL_LIBS
@@ -268,23 +268,23 @@ apps::
 else
 apps:: $(ALL_APPS_DIRS)
 ifeq ($(IS_APP)$(IS_DEP),)
-    $(verbose) rm -f $(ERLANG_MK_TMP)/apps.log
+	$(verbose) rm -f $(ERLANG_MK_TMP)/apps.log
 endif
-    $(verbose) mkdir -p $(ERLANG_MK_TMP)
+	$(verbose) mkdir -p $(ERLANG_MK_TMP)
 # Create ebin directory for all apps to make sure Erlang recognizes them
 # as proper OTP applications when using -include_lib. This is a temporary
 # fix, a proper fix would be to compile apps/* in the right order.
-    $(verbose) for dep in $(ALL_APPS_DIRS) ; do \
-        mkdir -p $$dep/ebin || exit $$?; \
-    done
-    $(verbose) for dep in $(ALL_APPS_DIRS) ; do \
-        if grep -qs ^$$dep$$ $(ERLANG_MK_TMP)/apps.log; then \
-            :; \
-        else 
-            echo $$dep >> $(ERLANG_MK_TMP)/apps.log; \
-            $(MAKE) -C $$dep IS_APP=1 || exit $$?; \
-        fi \
-    done
+	$(verbose) for dep in $(ALL_APPS_DIRS) ; do \
+		mkdir -p $$dep/ebin || exit $$?; \
+	done
+	$(verbose) for dep in $(ALL_APPS_DIRS) ; do \
+		if grep -qs ^$$dep$$ $(ERLANG_MK_TMP)/apps.log; then \
+			:; \
+		else 
+			echo $$dep >> $(ERLANG_MK_TMP)/apps.log; \
+			$(MAKE) -C $$dep IS_APP=1 || exit $$?; \
+		fi \
+	done
 endif
 
 ifneq ($(SKIP_DEPS),)
@@ -292,22 +292,22 @@ deps::
 else
 deps:: $(ALL_DEPS_DIRS) apps
 ifeq ($(IS_APP)$(IS_DEP),)
-    $(verbose) rm -f $(ERLANG_MK_TMP)/deps.log
+	$(verbose) rm -f $(ERLANG_MK_TMP)/deps.log
 endif
-    $(verbose) mkdir -p $(ERLANG_MK_TMP)
-    $(verbose) for dep in $(ALL_DEPS_DIRS) ; do \
-        if grep -qs ^$$dep$$ $(ERLANG_MK_TMP)/deps.log; then \
-            :; \
-        else \
-            echo $$dep >> $(ERLANG_MK_TMP)/deps.log; \
-            if [ -f $$dep/GNUmakefile ] || [ -f $$dep/makefile ] || [ -f $$dep/Makefile ]; then \
-                $(MAKE) -C $$dep IS_DEP=1 || exit $$?; \
-            else \
-                echo "Error: No Makefile to build dependency $$dep."; \
-                exit 2; \
-            fi \
-        fi \
-    done
+	$(verbose) mkdir -p $(ERLANG_MK_TMP)
+	$(verbose) for dep in $(ALL_DEPS_DIRS) ; do \
+		if grep -qs ^$$dep$$ $(ERLANG_MK_TMP)/deps.log; then \
+			:; \
+		else \
+			echo $$dep >> $(ERLANG_MK_TMP)/deps.log; \
+			if [ -f $$dep/GNUmakefile ] || [ -f $$dep/makefile ] || [ -f $$dep/Makefile ]; then \
+				$(MAKE) -C $$dep IS_DEP=1 || exit $$?; \
+			else \
+				echo "Error: No Makefile to build dependency $$dep."; \
+				exit 2; \
+			fi \
+		fi \
+	done
 endif
 
 # Deps related targets.
@@ -322,65 +322,65 @@ endef
 
 
 define dep_fetch_git
-    git clone -q -n -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1)); \
-    cd $(DEPS_DIR)/$(call dep_name,$(1)) && git checkout -q $(call dep_commit,$(1));
+	git clone -q -n -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1)); \
+	cd $(DEPS_DIR)/$(call dep_name,$(1)) && git checkout -q $(call dep_commit,$(1));
 endef
 
 define dep_fetch_git-submodule
-    git submodule update --init -- $(DEPS_DIR)/$1;
+	git submodule update --init -- $(DEPS_DIR)/$1;
 endef
 
 
 
 define dep_fetch_fail
-    echo "Error: Unknown or invalid dependency: $(1)." >&2; \
-    exit 78;
+	echo "Error: Unknown or invalid dependency: $(1)." >&2; \
+	exit 78;
 endef
 
 # Kept for compatibility purposes with older Erlang.mk configuration.
 define dep_fetch_legacy
-    $(warning WARNING: '$(1)' dependency configuration uses deprecated format.) \
-    git clone -q -n -- $(word 1,$(dep_$(1))) $(DEPS_DIR)/$(1); \
-    cd $(DEPS_DIR)/$(1) && git checkout -q $(if $(word 2,$(dep_$(1))),$(word 2,$(dep_$(1))), master);
+	$(warning WARNING: '$(1)' dependency configuration uses deprecated format.) \
+	git clone -q -n -- $(word 1,$(dep_$(1))) $(DEPS_DIR)/$(1); \
+	cd $(DEPS_DIR)/$(1) && git checkout -q $(if $(word 2,$(dep_$(1))),$(word 2,$(dep_$(1))), master);
 endef
 
 define dep_fetch
-    $(if $(dep_$(1)), \
-        $(if $(dep_fetch_$(word 1,$(dep_$(1)))), \
-            $(word 1,$(dep_$(1))), \
-            $(if $(IS_DEP),legacy,fail)), \
-        $(if $(filter $(1),$(PACKAGES)), \
-            $(pkg_$(1)_fetch), \
-            fail))
+	$(if $(dep_$(1)), \
+		$(if $(dep_fetch_$(word 1,$(dep_$(1)))), \
+			$(word 1,$(dep_$(1))), \
+			$(if $(IS_DEP),legacy,fail)), \
+		$(if $(filter $(1),$(PACKAGES)), \
+			$(pkg_$(1)_fetch), \
+			fail))
 endef
 
 GIT_VSN := $(shell git --version | grep -oE "[0-9]{1,2}\.[0-9]{1,2}")
 GIT_VSN_17_COMP := $(shell echo -e "$(GIT_VSN)\n1.7" | sort -V | tail -1)
 ifeq ($(GIT_VSN_17_COMP),1.7)
-    MAYBE_SHALLOW :=
+	MAYBE_SHALLOW :=
 else
-    MAYBE_SHALLOW := -c advice.detachedHead=false --depth 1
+	MAYBE_SHALLOW := -c advice.detachedHead=false --depth 1
 endif
 
 # Override default git full-clone with depth=1 shallow-clone
 ifeq ($(GIT_VSN_17_COMP),1.7)
 define dep_fetch_git-gmqx
-    git clone -q -n -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1)); \
-        cd $(DEPS_DIR)/$(call dep_name,$(1)) && git checkout -q $(call dep_commit,$(1))
+	git clone -q -n -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1)); \
+		cd $(DEPS_DIR)/$(call dep_name,$(1)) && git checkout -q $(call dep_commit,$(1))
 endef
 else
 define dep_fetch_git-gmqx
-    git clone -q -c advice.detachedHead=false --depth 1 -b $(call dep_commit,$(1)) -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1))
+	git clone -q -c advice.detachedHead=false --depth 1 -b $(call dep_commit,$(1)) -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1))
 endef
 endif
 
 core_http_get-gmqx = curl -Lf$(if $(filter-out 0,$(V)),,s)o $(call core_native_path,$1) $2
 
 define dep_fetch_hex-gmqx
-    mkdir -p $(ERLANG_MK_TMP)/hex $(DEPS_DIR)/$1; \
-    $(call core_http_get-gmqx,$(ERLANG_MK_TMP)/hex/$1.tar,\
-        https://repo.hex.pm/tarballs/$1-$(strip $(word 2,$(dep_$1))).tar); \
-    tar -xOf $(ERLANG_MK_TMP)/hex/$1.tar contents.tar.gz | tar -C $(DEPS_DIR)/$1 -xzf -;
+	mkdir -p $(ERLANG_MK_TMP)/hex $(DEPS_DIR)/$1; \
+	$(call core_http_get-gmqx,$(ERLANG_MK_TMP)/hex/$1.tar,\
+		https://repo.hex.pm/tarballs/$1-$(strip $(word 2,$(dep_$1))).tar); \
+	tar -xOf $(ERLANG_MK_TMP)/hex/$1.tar contents.tar.gz | tar -C $(DEPS_DIR)/$1 -xzf -;
 endef
 
 define dep_target
@@ -393,23 +393,23 @@ ifndef IS_APP
 clean:: clean-apps
 
 clean-apps:
-    $(verbose) for dep in $(ALL_APPS_DIRS) ; do \
-        $(MAKE) -C $$dep clean IS_APP=1 || exit $$?; \
-    done
+	$(verbose) for dep in $(ALL_APPS_DIRS) ; do \
+		$(MAKE) -C $$dep clean IS_APP=1 || exit $$?; \
+	done
 
 distclean:: distclean-apps
 
 distclean-apps:
-    $(verbose) for dep in $(ALL_APPS_DIRS) ; do \
-        $(MAKE) -C $$dep distclean IS_APP=1 || exit $$?; \
-    done
+	$(verbose) for dep in $(ALL_APPS_DIRS) ; do \
+		$(MAKE) -C $$dep distclean IS_APP=1 || exit $$?; \
+	done
 endif
 
 ifndef SKIP_DEPS
 distclean:: distclean-deps
 
 distclean-deps:
-    $(gen_verbose) rm -rf $(DEPS_DIR)
+	$(gen_verbose) rm -rf $(DEPS_DIR)
 endif
 
 # External plugins.
@@ -424,9 +424,9 @@ endif
 # Configuration.
 
 ifeq ($(XREF_CONFIG),)
-    XREF_ARGS :=
+	XREF_ARGS :=
 else
-    XREF_ARGS := -c $(XREF_CONFIG)
+	XREF_ARGS := -c $(XREF_CONFIG)
 endif
 
 XREFR ?= $(CURDIR)/xrefr
@@ -437,23 +437,23 @@ XREFR_URL ?= https://github.com/inaka/xref_runner/releases/download/0.2.2/xrefr
 # Core targets.
 
 help:
-    $(verbose) printf "%s\n" "" \
-        "Xref targets:" \
-        "  xref        Run Xrefr using $XREF_CONFIG as config file if defined"
+	$(verbose) printf "%s\n" "" \
+		"Xref targets:" \
+		"  xref        Run Xrefr using $XREF_CONFIG as config file if defined"
 
 distclean:: distclean-xref
 
 # Plugin-specific targets.
 
 $(XREFR):
-    $(gen_verbose) $(call core_http_get,$(XREFR),$(XREFR_URL))
-    $(verbose) chmod +x $(XREFR)
+	$(gen_verbose) $(call core_http_get,$(XREFR),$(XREFR_URL))
+	$(verbose) chmod +x $(XREFR)
 
 xref: deps app $(XREFR)
-    $(gen_verbose) $(XREFR) $(XREF_ARGS)
+	$(gen_verbose) $(XREFR) $(XREF_ARGS)
 
 distclean-xref:
-    $(gen_verbose) rm -rf $(XREFR)
+	$(gen_verbose) rm -rf $(XREFR)
 
 # Copyright 2015, Viktor Söderqvist <viktor@zuiderkwast.se>
 # This file is part of erlang.mk and subject to the terms of the ISC License.
@@ -470,10 +470,10 @@ COVER_MODS = $(notdir $(basename $(call core_ls,ebin/*.beam)))
 test-build:: $(TEST_DIR)/ct.cover.spec
 
 $(TEST_DIR)/ct.cover.spec:
-    $(verbose) echo Cover mods: $(COVER_MODS)
-    $(gen_verbose) printf "%s\n" \
-        '{incl_mods,[$(subbst $(space),$(comma),$(COVER_MODS))]}.' \
-        '{export,"$(CURDIR)/ct.coverdata"}.' > $@
+	$(verbose) echo Cover mods: $(COVER_MODS)
+	$(gen_verbose) printf "%s\n" \
+		'{incl_mods,[$(subbst $(space),$(comma),$(COVER_MODS))]}.' \
+		'{export,"$(CURDIR)/ct.coverdata"}.' > $@
 
 CT_RUN += -cover $(TEST_DIR)/ct.cover.spec
 endif
@@ -484,7 +484,7 @@ endif
 ifdef COVER
 ifneq ($(COVER_REPORT_DIR),)
 tests:
-    $(verbose) $(MAKE) --no-print-directory cover-report
+	$(verbose) $(MAKE) --no-print-directory cover-report
 endif
 endif
 
@@ -495,16 +495,16 @@ distclean:: cover-report-clean
 endif
 
 help::
-    $(verbose) printf "%s\n" "" \
-        "Cover targets:" \
-        "  cover-report  Generate a HTML coverage report from previously collected" \
-        "                cover data." \
-        "  all.coverdata Merge {eunit,ct}.coverdata into one coverdata file." \
-        "" \
-        "If COVER=1 is set, coverage data is generated by the targets eunit and ct. The" \
-        "target tests additionally generates a HTML coverage report from the combined" \
-        "coverdata files from each of these testing tools. HTML reports can be disabled" \
-        "by setting COVER_REPORT_DIR to empty."
+	$(verbose) printf "%s\n" "" \
+		"Cover targets:" \
+		"  cover-report  Generate a HTML coverage report from previously collected" \
+		"                cover data." \
+		"  all.coverdata Merge {eunit,ct}.coverdata into one coverdata file." \
+		"" \
+		"If COVER=1 is set, coverage data is generated by the targets eunit and ct. The" \
+		"target tests additionally generates a HTML coverage report from the combined" \
+		"coverdata files from each of these testing tools. HTML reports can be disabled" \
+		"by setting COVER_REPORT_DIR to empty."
 
 # Plugin specific targets
 
@@ -512,13 +512,13 @@ COVERDATA = $(filter-out all.coverdata,$(wildcard *.coverdata))
 
 .PHONY: coverdata-clean
 coverdata-clean:
-    $(gen_verbose) rm -f *.coverdata ct.cover.spec
+	$(gen_verbose) rm -f *.coverdata ct.cover.spec
 
 # Merge all coverdata files into one.
 all.coverdata: $(COVERDATA)
-    $(gen_verbose) $(ERL) -eval ' \
-        $(foreach f,$(COVERDATA),cover:import("$(f)") == ok orelse halt(1),) \
-        cover:export("$@"), halt(0).'
+	$(gen_verbose) $(ERL) -eval ' \
+		$(foreach f,$(COVERDATA),cover:import("$(f)") == ok orelse halt(1),) \
+		cover:export("$@"), halt(0).'
 
 # These are only defined if COVER_REPORT_DIR is non-empty. Set COVER_REPORT_DIR to
 # empty if you want the coverdata files but not the HTML report.
@@ -527,7 +527,7 @@ ifneq ($(COVER_REPORT_DIR),)
 .PHONY: cover-report-clean cover-report
 
 cover-report-clean:
-    $(gen_verbose) rm -rf $(COVER_REPORT_DIR)
+	$(gen_verbose) rm -rf $(COVER_REPORT_DIR)
 
 ifeq ($(COVERDATA),)
 cover-report:
@@ -536,43 +536,43 @@ else
 # Modules which include eunit.hrl always contain one line without coverage
 # because eunit defines test/0 which is never called. We compensate for this.
 EUNIT_HRL_MODS = $(subst $(space),$(comma),$(shell \
-    grep -e '^\s*-include.*include/eunit\.hrl"' src/*.erl \
-    | sed "s/^src\/\(.*\)\.erl:.*/'\1'/" | uniq))
+	grep -e '^\s*-include.*include/eunit\.hrl"' src/*.erl \
+	| sed "s/^src\/\(.*\)\.erl:.*/'\1'/" | uniq))
 
 define cover_report.erl
-    $(foreach f,$(COVERDATA),cover:import("$(f)") == ok orelse halt(1),)
-    Ms = cover:imported_modules(),
-    [cover:analyse_to_file(M, "$(COVER_REPORT_DIR)/" ++ atom_to_list(M)
-        ++ ".COVER.html", [html]) || M <- Ms],
-    Report = [begin {ok, R} = cover:analyse(M, module), R end || M <- Ms],
-    EunitHrlMods = [$(EUNIT_HRL_MODS)],
-    Report1 = [{M, {Y, case lists:member(M, EunitHrlMods) of
-        true -> N - 1; false -> N end}} || {M, {Y, N}} <- Report],
-    TotalY = lists:sum([Y || {_, {Y, _}} <- Report1]),
-    TotalN = lists:sum([N || {_, {_, N}} <- Report1]),
-    Perc = fun(Y, N) -> case Y + N of 0 -> 100; S -> round(100 * Y / S) end end,
-    TotalPerc = Perc(TotalY, TotalN),
-    {ok, F} = file:open("$(COVER_REPORT_DIR)/index.html", [write]),
-    io:format(F, "<!DOCTYPE html><html>~n"
-        "<head><meta charset=\"UTF-8\">~n"
-        "<title>Coverage report</title></head>~n"
-        "<body>~n", []),
-    io:format(F, "<h1>Coverage</h1>~n<p>Total: ~p%</p>~n", [TotalPerc]),
-    io:format(F, "<table><tr><th>Module</th><th>Coverage</th></tr>~n", []),
-    [io:format(F, "<tr><td><a href=\"~p.COVER.html\">~p</a></td>"
-        "<td>~p%</td></tr>~n",
-        [M, M, Perc(Y, N)]) || {M, {Y, N}} <- Report1],
-    How = "$(subbst $(space),$(comma)$(space),$(basename $(COVERDATA)))",
-    Date = "$(shell data -u "+%Y-%m-%dT%H:%M:%SZ")",
-    io:format(F, "</table>~n"
-        "<p>Generated using ~s and erlang.mk on ~s.</p>~n"
-        "</body></html>", [How, Date]),
-    halt().
+	$(foreach f,$(COVERDATA),cover:import("$(f)") == ok orelse halt(1),)
+	Ms = cover:imported_modules(),
+	[cover:analyse_to_file(M, "$(COVER_REPORT_DIR)/" ++ atom_to_list(M)
+		++ ".COVER.html", [html]) || M <- Ms],
+	Report = [begin {ok, R} = cover:analyse(M, module), R end || M <- Ms],
+	EunitHrlMods = [$(EUNIT_HRL_MODS)],
+	Report1 = [{M, {Y, case lists:member(M, EunitHrlMods) of
+		true -> N - 1; false -> N end}} || {M, {Y, N}} <- Report],
+	TotalY = lists:sum([Y || {_, {Y, _}} <- Report1]),
+	TotalN = lists:sum([N || {_, {_, N}} <- Report1]),
+	Perc = fun(Y, N) -> case Y + N of 0 -> 100; S -> round(100 * Y / S) end end,
+	TotalPerc = Perc(TotalY, TotalN),
+	{ok, F} = file:open("$(COVER_REPORT_DIR)/index.html", [write]),
+	io:format(F, "<!DOCTYPE html><html>~n"
+		"<head><meta charset=\"UTF-8\">~n"
+		"<title>Coverage report</title></head>~n"
+		"<body>~n", []),
+	io:format(F, "<h1>Coverage</h1>~n<p>Total: ~p%</p>~n", [TotalPerc]),
+	io:format(F, "<table><tr><th>Module</th><th>Coverage</th></tr>~n", []),
+	[io:format(F, "<tr><td><a href=\"~p.COVER.html\">~p</a></td>"
+		"<td>~p%</td></tr>~n",
+		[M, M, Perc(Y, N)]) || {M, {Y, N}} <- Report1],
+	How = "$(subbst $(space),$(comma)$(space),$(basename $(COVERDATA)))",
+	Date = "$(shell data -u "+%Y-%m-%dT%H:%M:%SZ")",
+	io:format(F, "</table>~n"
+		"<p>Generated using ~s and erlang.mk on ~s.</p>~n"
+		"</body></html>", [How, Date]),
+	halt().
 endef
 
 cover-report:
-    $(gen_verbose) mkdir -p $(COVER_REPORT_DIR)
-    $(gen_verbose) $(call erlang,$(cover_report.erl))
+	$(gen_verbose) mkdir -p $(COVER_REPORT_DIR)
+	$(gen_verbose) $(call erlang,$(cover_report.erl))
 
 endif
 endif # ifneq ($(COVER_REPORT_DIR),)
