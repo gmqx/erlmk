@@ -94,7 +94,7 @@ ifneq ($(wildcard erl_crash.dump),)
 	$(gen_verbose) rm -f erl_crash.dump
 endif
 
-distclean: clean distclean-tmp
+distclean:: clean distclean-tmp
 
 distclean-tmp:
 	$(gen_verbose) rm -rf $(ERLANG_MK_TMP)
@@ -131,7 +131,7 @@ comma := ,
 define newline
 
 
-enddef
+endef
 
 define comma_list
 $(subst $(space),$(comma),$(strip $(1)))
@@ -384,7 +384,44 @@ define dep_fetch_hex-gmqx
 endef
 
 define dep_target
-
+$(DEPS_DIR)/$(call dep_name,$1):
+	$(eval DEP_NAME := $(call dep_name,$1))
+	$(eval DEP_STR := $(if $(filter-out $1,$(DEP_NAME)),$1,"$1 ($(DEP_NAME))"))
+	$(verbose) if test -d $(APPS_DIR)/$(DEP_NAME); then \
+		echo "Error: Dependency" $(DEP_STR) "conflicts with application found in $(APPS_DIR)/$(DEP_NAME)."; \
+		exit 17; \
+	fi
+	$(verbose) mkdir -p $(DEPS_DIR)
+	$(dep_verbose) $(call dep_fetch_$(strip $(call dep_fetch,$(1))),$(1))
+	$(verbose) if [ -f $(DEPS_DIR)/$(1)/configure.ac -o -f $(DEPS_DIR)/$(1)/configure.in ] \
+			&& [ ! -f $(DEPS_DIR)/$(1)/configure ]; then \
+		echo " AUTO  " $(1); \
+		cd $(DEPS_DIR)/$(1) && autoreconf -Wall -vif -I m4; \
+	fi
+	- $(verbose) if [ -f $(DEPS_DIR)/$(DEP_NAME)/configure ]; then \
+		echo " CONF  " $(DEP_STR); \
+		cd $(DEPS_DIR)/$(DEP_NAME) && ./configure; \
+	fi
+ifeq ($(filter $(1),$(NO_AUTOPATCH)),)
+	$(verbose) if [ "$(1)" = "amqp_client" -a "$(RABBITMQ_CLIENT_PATCH)" ]; then \
+		if [ ! -d $(DEPS_DIR)/rabbitmq-codegen ]; then \
+			echo " PATCH  Downloading rabbitmq-codegen"; \
+			git clone https://github.com/rabbitmq/rabbitmq-codegen.git $(DEPS_DIR)/rabbitmq-codegen; \
+		fi; \
+		if [ ! -d $(DEPS_DIR)/rabbitmq-server ]; then \
+			echo " PATCH Downloading rabbitmq-server"; \
+			git clone https://github.com/rabbitmq/rabbitmq-server.git $(DEPS_DIR)/rabbitmq-server; \
+		fi; \
+		ln -s $(DEPS_DIR)/amqp_client/deps/rabbit_common-0.0.0 $(DEPS_DIR)/rabbit_common; \
+	elif [ "$(1)" = "rabbit" -a "$(RABBITMQ_SERVER_PATCH)" ]; then \
+		if [ ! -d $(DEPS_DIR)/rabbitmq-codegen ]; then \
+			echo " PATCH Downloading rabbitmq-codegen"; \
+			git clone https://github.com/rabbitmq/rabbitmq-codegen.git $(DEPS_DIR)/rabbitmq-codegen; \
+		fi \
+	else \
+		$$(call dep_autopatch,$(DEP_NAME)) \
+	fi
+endif
 endef
 
 $(foreach dep,$(BUILD_DEPS) $(DEPS),$(eval $(call dep_target,$(dep))))
@@ -436,7 +473,7 @@ XREFR_URL ?= https://github.com/inaka/xref_runner/releases/download/0.2.2/xrefr
 
 # Core targets.
 
-help:
+help::
 	$(verbose) printf "%s\n" "" \
 		"Xref targets:" \
 		"  xref        Run Xrefr using $XREF_CONFIG as config file if defined"
